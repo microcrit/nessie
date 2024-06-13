@@ -1,0 +1,3 @@
+https://linuxtracker.org/index.php?page=downloadcheck&id=40eb2f507a310135ad11f5ec3228d17b9e18986c
+where(attr=(href -> Puppy+Linux+Bookwormpup64+10.0.3+ISO.torrent << any))
+extract(attr=href, prefix=https://linuxtracker.org/)

@@ -1,0 +1,6 @@
+https://torrents.artixlinux.org/torrents.php
+
+# notice to my fellow humans, DON'T EVER DO THIS it CAN and WILL cause conflicts!!!
+where(attr=(href -> https://torrents.artixlinux.org/artix-xfce-dinit- << start))
+
+extract(attr=href)

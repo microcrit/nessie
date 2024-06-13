@@ -1,0 +1,3 @@
+https://www.kali.org/get-kali/
+where(sel=#kali-live__64bit .download-card.recommended .download-card__downloads a:nth-child(2))
+extract(attr=href)

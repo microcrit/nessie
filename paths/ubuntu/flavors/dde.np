@@ -1,0 +1,3 @@
+https://ubuntudde.com/download/
+where(attr=(href -> amd64-desktop.iso.torrent << end))
+extract(attr=href)

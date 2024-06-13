@@ -1,0 +1,3 @@
+https://blackarch.org/downloads.html
+where(sel=.download tr:nth-child(2) td:nth-child(3) a)
+extract(attr=href, prefix=https://blackarch.org)

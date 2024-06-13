@@ -1,0 +1,3 @@
+https://fosstorrents.com/thankyou/?name=manjaro&cat=Official%20Editions&id=9&hybrid=0
+where(sel=head > script:last-child)
+extract(regex=("/files/download\.php\?file=(.*)"; -> https://fosstorrents.com/files/download.php?file= + $1))

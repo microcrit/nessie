@@ -1,0 +1,3 @@
+https://fosstorrents.com/thankyou/?name=fedora&cat=Workstation&id=0&hybrid=0
+where(sel=head > script:last-child)
+extract(regex=("/files/download\.php\?file=(.*)"; -> https://fosstorrents.com/files/download.php?file= + $1))

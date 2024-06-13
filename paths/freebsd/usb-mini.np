@@ -1,0 +1,4 @@
+# yes i renamed "memstick" to "usb" for better user experience, get rekt
+https://fosstorrents.com/thankyou/?name=freebsd&cat=amd64%20Editions&id=4&hybrid=0
+where(sel=head > script:last-child)
+extract(regex=("/files/download\.php\?file=(.*)"; -> https://fosstorrents.com/files/download.php?file= + $1))

@@ -1,0 +1,3 @@
+https://fosstorrents.com/thankyou/?name=antix&cat=64bit%20Release&id=0&hybrid=0
+where(sel=head > script:last-child)
+extract(regex=("/files/download\.php\?file=(.*)"; -> https://fosstorrents.com/files/download.php?file= + $1))
