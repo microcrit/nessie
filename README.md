@@ -2,6 +2,11 @@
 Is an automated web scraper for downloading Linux torrent files.   
 Nessie comes pre-packaged with a basic, simple language to configure scraping and tons of scripts for every distro you want.   
    
+## Why?
+- To prevent the pain of looking up an OS's official torrent and manually downloading everything.
+- To support people looking to host their own Linux distribution mirrors.
+- To pull the latest versions of many OSes, all the time.
+   
 ## Shortcomings
 - Nessie does not automatically generate a repository of ISO files for you to use. For that, you will have to load each torrent file into a torrenting client such as qBitTorrent.
     - I can implement automatic downloading as an optional feature in the future using WebTorrent.
