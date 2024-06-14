@@ -19,7 +19,7 @@ import { npParse } from "./utils/np.js";
 import { request } from 'undici';
 import { JSDOM } from 'jsdom';
 import { stdin, stdout } from "process";
-import { tsParse } from "./utils/ts.js";
+import { glob } from "glob";
 import WebTorrent from 'webtorrent';
 
 if (!fs.existsSync('torrents')) {
@@ -106,7 +106,7 @@ function clearLine(y) {
     stdout.write(' '.repeat(stdout.columns - 1));
 }
 
-let greps = process.argv.slice(2).filter(x => x.startsWith('@'));
+let greps = process.argv.slice(2).filter(x => !x.startsWith('--'));
 
 if (!process.argv.includes('--no-torrents')) {
     if (process.argv.includes('--torrents-clean')) {
@@ -256,6 +256,10 @@ function threadedForEach(array, callback, threads = os.cpus().length) {
     });
 }
 
+async function tsParse(content) {
+    return await glob("./torrents/" + content);
+}  
+
 if (!process.argv.includes('--no-dl')) {
     console.clear();
     if (process.argv.includes('--dl-clean')) {
@@ -279,8 +283,10 @@ if (!process.argv.includes('--no-dl')) {
 
     let paths = [];
     for (var x of greps) {
-        paths = paths.concat(tsParse(x));
+        let glob2 = await tsParse(x);
+        paths = paths.concat(glob2);
     }
+    console.log(paths);
     const client = new WebTorrent();
     threadedForEach(paths, async path => {
         let dir = path.split('/').slice(0, -1).join('/');
@@ -318,6 +324,8 @@ if (!process.argv.includes('--no-dl')) {
                     delete prevValues[file.name];
                     clearLine(stdout.columns - 1);
                     clearLine(stdout.columns - 2);
+                    clearLine(stdout.columns - 3);
+                    clearLine(stdout.columns - 4);
                     drawProgressBar(Math.round(client.progress * 100), 100);
                     drawHistory();
                 });
@@ -339,6 +347,8 @@ if (!process.argv.includes('--no-dl')) {
             prevValues[file.name] = torrent.progress * 100;
             clearLine(stdout.columns - 1);
             clearLine(stdout.columns - 2);
+            clearLine(stdout.columns - 3);
+            clearLine(stdout.columns - 4);
             drawProgressBar(Math.round(client.progress * 100), 100);
             drawHistory();
         });
