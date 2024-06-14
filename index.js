@@ -314,6 +314,13 @@ if (!process.argv.includes('--no-dl')) {
                 var stream = fs.createWriteStream(`downloads/${path.split('/').slice(0, -1).join('/')}/${file.name}`);
                 let rs = file.createReadStream();
                 rs.pipe(stream);
+                torrent.on('done', function () {
+                    delete prevValues[file.name];
+                    clearLine(stdout.columns - 1);
+                    clearLine(stdout.columns - 2);
+                    drawProgressBar(Math.round(client.progress * 100), 100);
+                    drawHistory();
+                });
             });
         }
     });
@@ -334,9 +341,6 @@ if (!process.argv.includes('--no-dl')) {
             clearLine(stdout.columns - 2);
             drawProgressBar(Math.round(client.progress * 100), 100);
             drawHistory();
-        });
-        torrent.on('done', function () {
-            delete prevValues[file.name];
         });
     });
 }
