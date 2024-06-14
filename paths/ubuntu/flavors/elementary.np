@@ -1,0 +1,5 @@
+https://elementary.io/
+# ElementaryOS runs off of a pay-what-you-want model.
+# Please support their development by visiting the link to ElementaryOS above and making a donation.
+where(sel=#download-modal .action-area .linked .magnet)
+extract(attr=href, magnet=true)

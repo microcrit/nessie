@@ -13,6 +13,7 @@
   "dependencies": {
     "joi": "^17.13.1",
     "jsdom": "^24.1.0",
-    "undici": "^6.18.2"
+    "undici": "^6.18.2",
+    "webtorrent": "^2.4.1"
   }
 }

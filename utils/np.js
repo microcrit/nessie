@@ -57,7 +57,8 @@ const RegexExtractorRequireds = Joi.object({
 const ExtractorOptionals = Joi.object({
     regex: RegexExtractorRequireds.allow(null),
     prefix: Joi.string().allow(null).allow(''),
-    attr: Joi.string().allow(null).allow('')
+    attr: Joi.string().allow(null).allow(''),
+    magnet: Joi.bool().default(false)
 });
 
 const ParsedNPLang = Joi.object({
@@ -89,7 +90,8 @@ export function npParse(content) {
             replace: regexParams.split('->')[1].trim().split('+')[1].trim()
         },
         prefix: (extractorParams || {}).prefix,
-        attr: (extractorParams || {}).attr
+        attr: (extractorParams || {}).attr,
+        magnet: (extractorParams || {}).magnet === 'true'
     };
 
     let selectorAttrParams = raw ? null : selectorParams.attr && selectorParams.attr.split('(').slice(1).join('(').split(')').slice(0, -1).join(')');
