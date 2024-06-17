@@ -7,7 +7,7 @@ Nessie comes pre-packaged with a basic, simple language to configure scraping an
 - To support people looking to host their own Linux distribution mirrors.
 - To pull the latest versions of many OSes, all the time.
 - To provide a public alternative to my private QEMU virtual machine manager, LBOX, oriented towards "real" VMs and burning to USBs.
-
+   
 ## Requirements
 - Install `aria2c` via Chocolatey or another package manager of your choice.
    
