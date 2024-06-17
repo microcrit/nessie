@@ -21,6 +21,7 @@ import { JSDOM } from 'jsdom';
 import { stdin, stdout } from "process";
 import { glob } from "glob";
 import WebTorrent from 'webtorrent';
+import child_process from 'child_process';
 
 if (!fs.existsSync('torrents')) {
     fs.mkdirSync('torrents');
@@ -129,6 +130,7 @@ if (!process.argv.includes('--no-torrents')) {
         let parsed = npParse(content);
 
         const { url, raw, selector, extractor } = parsed;
+        let { aria2 } = extractor;
 
         clearLine(stdout.rows - 5);
         clearLine(stdout.rows - 4);
@@ -137,7 +139,7 @@ if (!process.argv.includes('--no-torrents')) {
 
         let body,
             document;
-        if (!raw) {
+        if (!raw && !aria2) {
             body = (await request2(url)).body;
             const txt = await body.text();
             let dom = new JSDOM(txt);
@@ -145,7 +147,7 @@ if (!process.argv.includes('--no-torrents')) {
         }
 
         let element;
-        if (!raw) {
+        if (!raw && !aria2) {
             if (selector.attr) {
                 let attr = selector.attr;
                 let pos = selector.attr.position === "start" ? "^" : selector.attr.position === "end" ? "$" : selector.attr.position === "any" ? "*" : "";
@@ -165,7 +167,7 @@ if (!process.argv.includes('--no-torrents')) {
         }
 
         let result;
-        if (!raw) {
+        if (!raw && !aria2) {
             if (extractor.regex) {
                 let regex = new RegExp(extractor.regex.match, "g");
                 let match = [...regex.exec(element.textContent)];
@@ -175,7 +177,7 @@ if (!process.argv.includes('--no-torrents')) {
             } else {
                 throw new Error('No extractor provided');
             }
-        } else {
+        } else if (raw || aria2) {
             result = url;
         }
 
@@ -189,7 +191,8 @@ if (!process.argv.includes('--no-torrents')) {
         drawHistory();
         pathMaps[path] = {
             url: result,
-            magnet: extractor.magnet
+            magnet: extractor.magnet,
+            aria2: extractor.aria2
         };
     }
 
@@ -204,10 +207,21 @@ if (!process.argv.includes('--no-torrents')) {
             console.log(`~> Skipping ${path}\n`);
             continue;
         }
+        let dirx = path.split('/').slice(0, -1).join('/');
+        console.log(`~> ${dirx}`);
+        if (!fs.existsSync(`torrents/${dirx.replace('paths', '')}`)) {
+            fs.mkdirSync(`torrents/${dirx.replace('paths', '')}`, { recursive: true });
+        }
         let outputPath;
         if (result.magnet) {
             outputPath = path.replace('paths', 'torrents').replace('.np', '.magnet');
             console.log('~> Saving magnet ' + outputPath);
+            fs.writeFileSync(outputPath, result.url);
+            console.log();
+            continue;
+        } else if (result.aria2) {
+            outputPath = path.replace('paths', 'torrents').replace('.np', '.aria2');
+            console.log('~> Saving aria2 ' + outputPath);
             fs.writeFileSync(outputPath, result.url);
             console.log();
             continue;
@@ -260,6 +274,8 @@ async function tsParse(content) {
     return await glob("./torrents/" + content);
 }  
 
+let processes_aria2 = [];
+
 if (!process.argv.includes('--no-dl')) {
     console.clear();
     if (process.argv.includes('--dl-clean')) {
@@ -286,50 +302,97 @@ if (!process.argv.includes('--no-dl')) {
         let glob2 = await tsParse(x);
         paths = paths.concat(glob2);
     }
-    console.log(paths);
+    if (paths.length === 0) {
+        console.log('No torrents found');
+        process.exit(0);
+    }
     const client = new WebTorrent();
     threadedForEach(paths, async path => {
-        let dir = path.split('/').slice(0, -1).join('/');
-        if (!fs.existsSync(`downloads/${dir}`)) {
-            fs.mkdirSync(`downloads/${dir}`, { recursive: true });
-        }
-        if (path.endsWith('.magnet')) {
-            let magnet = fs.readFileSync(path, 'utf-8');
-            console.log(('~> Downloading magnet ' + magnet).substring(0, stdout.columns - 5));
-            client.add(magnet, torrent => {
-                var file = torrent.files.find(file => file.name.endsWith('.iso'));
-                if (!file) {
-                    file = torrent.files[0];
-                }
-                var stream = fs.createWriteStream(`downloads/${path.split('/').slice(0, -1).join('/')}/${file.name}`);
-                let rs = file.createReadStream();
-                rs.pipe(stream);
-                torrent.on('done', function () {
-                    console.log('  --> Done with ' + file.name);
-                    stream.close();
-                });
+        if (path.endsWith('.aria2')) {
+            let dir = path.split('\\').slice(0, -1).join('\\');
+            if (!fs.existsSync(dir.replace('torrents', 'downloads'))) {
+                fs.mkdirSync(dir.replace('torrents', 'downloads'), { recursive: true });
+            }
+            let content = fs.readFileSync(path, 'utf8');
+            let url = content;
+            history.push(`{aria2} [${path}] -> ${url} [${dir.replace('torrents', 'downloads')}]`);
+            const c = child_process.spawn(`aria2c -d "${dir.replace('torrents', 'downloads')}" "${url}"`, {
+                shell: true
             });
-        } else {
-            console.log(('~> Downloading torrent ' + path).substring(0, stdout.columns - 5));
-            const buf = fs.readFileSync(path);
-            client.add(buf, torrent => {
-                var file = torrent.files.find(file => file.name.endsWith('.iso'));
-                if (!file) {
-                    file = torrent.files[0];
-                }
-                var stream = fs.createWriteStream(`downloads/${path.split('/').slice(0, -1).join('/')}/${file.name}`);
-                let rs = file.createReadStream();
-                rs.pipe(stream);
-                torrent.on('done', function () {
-                    delete prevValues[file.name];
-                    clearLine(stdout.columns - 1);
-                    clearLine(stdout.columns - 2);
-                    clearLine(stdout.columns - 3);
-                    clearLine(stdout.columns - 4);
-                    drawProgressBar(Math.round(client.progress * 100), 100);
-                    drawHistory();
+            c.stdout.setEncoding('utf-8');
+            c.stdout.on('data', function (data) {
+                history = history.filter(x => {
+                    if (x.startsWith('{aria2} (log)') && x.includes("[" + path + "]")) {
+                        return false;
+                    } else {
+                        return true;
+                    }
                 });
+                history.push(`{aria2} (log) [${path}] -> ${data}`);
             });
+            c.on('close', function () {
+                history = history.filter(x => {
+                    if (x.startsWith('{aria2} (close)') && x.includes("[" + path + "]")) {
+                        return false;
+                    } else if (x.startsWith('{aria2} [') && x.includes("[" + path + "]")) {
+                        return false;
+                    } else {
+                        return true;
+                    }
+                });
+                processes_aria2 = processes_aria2.filter(x => x !== c);
+            });
+            processes_aria2.push(c);
+            history = history.filter(x => x.startsWith('{aria2}')).concat(Object.entries(prevValues).sort((a, b) => {
+                return a[1] - b[1];
+            }).map(([key, value]) => `[${key}] -> ${Math.round(value)}%`));
+            clearLine(stdout.columns - 1);
+            clearLine(stdout.columns - 2);
+            clearLine(stdout.columns - 3);
+            clearLine(stdout.columns - 4);
+            drawProgressBar(Math.round(client.progress * 100), 100);
+            drawHistory();
+        } else if (path.endsWith('.magnet') || path.endsWith('.torrent')) {
+            let dir = path.split('/').slice(0, -1).join('/');
+            if (!fs.existsSync(`downloads/${dir}`)) {
+                fs.mkdirSync(`downloads/${dir}`, { recursive: true });
+            }
+            if (path.endsWith('.magnet')) {
+                let magnet = fs.readFileSync(path, 'utf-8');
+                client.add(magnet, torrent => {
+                    var file = torrent.files.find(file => file.name.endsWith('.iso'));
+                    if (!file) {
+                        file = torrent.files[0];
+                    }
+                    var stream = fs.createWriteStream(`downloads/${path.split('/').slice(0, -1).join('/')}/${file.name}`);
+                    let rs = file.createReadStream();
+                    rs.pipe(stream);
+                    torrent.on('done', function () {
+                        console.log('  --> Done with ' + file.name);
+                        stream.close();
+                    });
+                });
+            } else {
+                const buf = fs.readFileSync(path);
+                client.add(buf, torrent => {
+                    var file = torrent.files.find(file => file.name.endsWith('.iso'));
+                    if (!file) {
+                        file = torrent.files[0];
+                    }
+                    var stream = fs.createWriteStream(`downloads/${path.split('/').slice(0, -1).join('/')}/${file.name}`);
+                    let rs = file.createReadStream();
+                    rs.pipe(stream);
+                    torrent.on('done', function () {
+                        delete prevValues[file.name];
+                        clearLine(stdout.columns - 1);
+                        clearLine(stdout.columns - 2);
+                        clearLine(stdout.columns - 3);
+                        clearLine(stdout.columns - 4);
+                        drawProgressBar(Math.round(client.progress * 100), 100);
+                        drawHistory();
+                    });
+                });
+            }
         }
     });
     history = [];
@@ -341,9 +404,9 @@ if (!process.argv.includes('--no-dl')) {
             if (Math.round(torrent.progress * 100) === 100) {
                 return;
             }
-            history = Object.entries(prevValues).sort((a, b) => {
+            history = history.filter(x => x.startsWith('{aria2}')).concat(Object.entries(prevValues).sort((a, b) => {
                 return a[1] - b[1];
-            }).map(([key, value]) => `[${key}] -> ${Math.round(value)}%`);
+            }).map(([key, value]) => `[${key}] -> ${Math.round(value)}%`));
             prevValues[file.name] = torrent.progress * 100;
             clearLine(stdout.columns - 1);
             clearLine(stdout.columns - 2);
@@ -363,4 +426,13 @@ stdin.on('data', function (key) {
     if (key === '\u0003') {
         process.kill(process.pid, 'SIGTERM');
     }
+});
+
+process.on('SIGTERM', function () {
+    if (!process.argv.includes('--no-dl')) {
+        for (let c of processes_aria2) {
+            c.kill();
+        }
+    }
+    process.exit(0);
 });

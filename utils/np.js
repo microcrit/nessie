@@ -58,7 +58,8 @@ const ExtractorOptionals = Joi.object({
     regex: RegexExtractorRequireds.allow(null),
     prefix: Joi.string().allow(null).allow(''),
     attr: Joi.string().allow(null).allow(''),
-    magnet: Joi.bool().default(false)
+    magnet: Joi.bool().default(false),
+    aria2: Joi.bool().default(false)
 });
 
 const ParsedNPLang = Joi.object({
@@ -75,13 +76,14 @@ export function npParse(content) {
     let type = (filteredLines[0].split(' ')[1] || '').trim();
     
     let raw = type === 'raw';
+    let aria2 = type === 'aria2';
 
-    let selectorRaw = raw ? null : filteredLines[1].split('where(')[1].split(')').slice(0, -1).join(')').trim();
-    let selectorParams = raw ? null : Object.fromEntries(selectorRaw.split(',').map(param => [param.split('=')[0].trim(), param.split('=').slice(1).join('=').trim()]));
+    let selectorRaw = raw || aria2 ? null : filteredLines[1].split('where(')[1].split(')').slice(0, -1).join(')').trim();
+    let selectorParams = raw || aria2 ? null : Object.fromEntries(selectorRaw.split(',').map(param => [param.split('=')[0].trim(), param.split('=').slice(1).join('=').trim()]));
 
-    let extractorRaw = raw ? null : filteredLines[2].split('extract(')[1].split(')').slice(0, -1).join(')').trim();
-    let extractorParams = raw ? null : Object.fromEntries(extractorRaw.split(',').map(param => [param.split('=')[0].trim(), param.split('=').slice(1).join('=').trim()]));
-    let regexParams = raw ? null : extractorParams.regex && extractorParams.regex.split('(').slice(1).join('(').split(')').slice(0, -1).join(')');
+    let extractorRaw = raw || aria2 ? null : filteredLines[2].split('extract(')[1].split(')').slice(0, -1).join(')').trim();
+    let extractorParams = raw || aria2 ? null : Object.fromEntries(extractorRaw.split(',').map(param => [param.split('=')[0].trim(), param.split('=').slice(1).join('=').trim()]));
+    let regexParams = raw || aria2 ? null : extractorParams.regex && extractorParams.regex.split('(').slice(1).join('(').split(')').slice(0, -1).join(')');
 
     let extractor = {
         regex: regexParams && {
@@ -91,10 +93,11 @@ export function npParse(content) {
         },
         prefix: (extractorParams || {}).prefix,
         attr: (extractorParams || {}).attr,
-        magnet: (extractorParams || {}).magnet === 'true'
+        magnet: (extractorParams || {}).magnet === 'true',
+        aria2
     };
 
-    let selectorAttrParams = raw ? null : selectorParams.attr && selectorParams.attr.split('(').slice(1).join('(').split(')').slice(0, -1).join(')');
+    let selectorAttrParams = raw || aria2 ? null : selectorParams.attr && selectorParams.attr.split('(').slice(1).join('(').split(')').slice(0, -1).join(')');
 
     let result = {
         url: url,
