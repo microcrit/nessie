@@ -7,11 +7,12 @@ Nessie comes pre-packaged with a basic, simple language to configure scraping an
 - To support people looking to host their own Linux distribution mirrors.
 - To pull the latest versions of many OSes, all the time.
 - To provide a public alternative to my private QEMU virtual machine manager, LBOX, oriented towards "real" VMs and burning to USBs.
+
+## Requirements
+- Install `aria2c` via Chocolatey or another package manager of your choice.
    
 ## Shortcomings
 - Nessie mainly relies on FOSSTorrent to source torrents. I expect to migrate to official repositories in the future.
-- Nessie does not support downloading regular files, only torrent files, meaning it is impossible to download Tiny Core Linux/some Puppy ISOs since they don't provide torrents.
-    - I can implement support for downloading regular files manually, but they will be excluded from the torrents folder and downloaded separately.
    
    
 ~ crit
